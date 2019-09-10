@@ -1,0 +1,4 @@
+#!/bin/sh
+echo "Removing SlykEPG7Day Plugin from the system ..."
+rm -rf /usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day > /dev/null 2>&1
+exit 0
