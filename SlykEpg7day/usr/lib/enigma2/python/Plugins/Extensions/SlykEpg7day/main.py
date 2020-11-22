@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from plugin import cfg, screenwidth, regionbouquets
+from . import _
+from .plugin import cfg, screenwidth, regionbouquets
 from Components.ActionMap import ActionMap
 from Components.ConfigList import ConfigListScreen
 from Components.config import configfile, getConfigListEntry
@@ -12,7 +13,6 @@ from multiprocessing.pool import ThreadPool
 from os import system
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
-from urllib2 import urlopen
 
 import datetime
 import json
@@ -21,6 +21,16 @@ import enigma
 import csv
 import unicodedata
 import re
+import sys
+
+pythonVer = 2
+if sys.version_info.major == 3:
+    pythonVer = 3
+
+if pythonVer == 3:
+    from urllib.request import urlopen, Request
+else:
+    from urllib2 import urlopen, Request
 
 try:
     from cStringIO import StringIO
@@ -31,18 +41,18 @@ haslzma = False
 
 try:
     import lzma
-    print '\nlzma success'
+    print('\nlzma success')
     haslzma = True
 
 except ImportError:
 
     try:
         from backports import lzma
-        print '\nbackports lzma success'
+        print('\nbackports lzma success')
         haslzma = True
 
     except ImportError:
-        print '\nlzma failed'
+        print('\nlzma failed')
         pass
 
 
@@ -266,8 +276,8 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                 try:
                     ignorelist = json.load(f)
                 except ValueError as e:
-                    print str(e) + '\n******** broken ignore-list.txt file ***********'
-                    print '\n******** check ignore-list.txt file with https://jsonlint.com ********'
+                    print(str(e) + '\n******** broken ignore-list.txt file ***********')
+                    print('\n******** check ignore-list.txt file with https://jsonlint.com ********')
 
         satTransponders = []
 
@@ -277,7 +287,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
             if os.path.isfile(lamedb):
 
-                with open(lamedb, 'rb') as f:
+                with open(lamedb, 'r') as f:
                     for line in f:
 
                         if line.startswith('transponders'):
@@ -324,12 +334,11 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                             # normalize channel name
                             piconChannelName = ChannelName
 
-                            try:
-                                piconChannelName = piconChannelName.encode('utf-8')
-                            except:
-                                pass
+                            if pythonVer == 2:
+                                piconChannelName = unicodedata.normalize('NFKD', unicode(piconChannelName, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
+                            elif pythonVer == 3:
+                                piconChannelName = unicodedata.normalize('NFKD', piconChannelName).encode('ASCII', 'ignore').decode('ascii')
 
-                            piconChannelName = unicodedata.normalize('NFKD', unicode(piconChannelName, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
                             piconChannelName = re.sub('[^a-z0-9]', '', piconChannelName.replace('&', 'and').replace('+', 'plus').replace('*', 'star').lower())
 
                             # if 28.2e tranpsonder in service line add to list
@@ -339,7 +348,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                                     lamedbsat.append([DBVStreamData, ChannelName, piconChannelName])
 
             else:
-                print "file read error"
+                print("file read error")
 
         # remove duplicate service refs and sort by channel name
         s = list()
@@ -369,8 +378,8 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             for item in self.lamedb:
                 writer.writerow([item[0], item[1], item[2]])
 
-        # print "SlykEPG: List of sat namespaces: %s" % (satTransponders)
-        # print "SlykEPG: Corresponding Lamedb sat entries: %s" % (len(self.lamedb))
+        # print("SlykEPG: List of sat namespaces: %s" % (satTransponders))
+        # print("SlykEPG: Corresponding Lamedb sat entries: %s" % (len(self.lamedb)))
 
         self.timer = eTimer()
         self.statusDescription = "Downloading Sky regions data..."
@@ -385,8 +394,8 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
         try:
             response = urlopen(regionsUrl, timeout=10)
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             self.urlList = []
             pass
 
@@ -419,7 +428,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             response = urlopen(url[i], timeout=10)
         except Exception as e:
             print(e)
-            print "***********  url failed % s" % url[i]
+            print("***********  url failed % s" % url[i])
             return None
 
         if response != '':
@@ -447,7 +456,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
             self.channelsBasic.append(temp)
         else:
-            print "log_result is none."
+            print("log_result is none.")
 
     # use pooling to download json files concurrently for faster downloads.
     def getJson(self):
@@ -496,7 +505,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             x += 1
 
         for i in range(len(self.channels_all)):
-            self.channels_all[0] = {x['c'][0]: x for x in self.channels_all[i] + self.channels_all[0]}.values()
+            self.channels_all[0] = list({x['c'][0]: x for x in self.channels_all[i] + self.channels_all[0]}.values())
 
         self.channels_all = self.channels_all[0]
 
@@ -675,18 +684,17 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             elif channel['sid'] == 4055:
                 channel['t'] = "STV Scotland West HD"
 
-            self.epgid = channel['t'].encode('utf8')
+            # self.epgid = channel['t'].encode('utf8')
 
             # normalize channel name
 
-            self.epgid = channel['t']
+            self.epgid = str(channel['t'])
 
-            try:
-                self.epgid = self.epgid.encode('utf8')
-            except:
-                pass
+            if pythonVer == 2:
+                self.epgid = unicodedata.normalize('NFKD', unicode(self.epgid, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
+            elif pythonVer == 3:
+                self.epgid = unicodedata.normalize('NFKD', self.epgid).encode('ASCII', 'ignore').decode('ascii')
 
-            self.epgid = unicodedata.normalize('NFKD', unicode(self.epgid, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
             self.epgid = re.sub('[^a-z0-9]', '', self.epgid.replace('&', 'and').replace('+', 'plus').replace('*', 'star').lower())
 
             # match rytec extensions
@@ -743,8 +751,8 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                 try:
                     manualrefslist = json.load(f)
                 except ValueError as e:
-                    print str(e) + '\n******** broken regional-refs.txt ***********'
-                    print '\n******** check /etc/enigma2/SlykEpg7day/manual-refs.txt file with https://jsonlint.com ********'
+                    print(str(e) + '\n******** broken regional-refs.txt ***********')
+                    print('\n******** check /etc/enigma2/SlykEpg7day/manual-refs.txt file with https://jsonlint.com ********')
 
         for channel in self.channels_all:
             if channel['t'] in manualrefslist:
@@ -759,14 +767,13 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                     if channel['manual'] is True:
                         continue
                 else:
-                    piconname = channel['t']
+                    piconname = str(channel['t'])
 
-                    try:
-                        piconname = piconname.encode('utf-8')
-                    except:
-                        pass
+                    if pythonVer == 2:
+                        piconname = unicodedata.normalize('NFKD', unicode(piconname, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
+                    elif pythonVer == 3:
+                        piconname = unicodedata.normalize('NFKD', piconname).encode('ASCII', 'ignore').decode('ascii')
 
-                    piconname = unicodedata.normalize('NFKD', unicode(piconname, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
                     piconname = re.sub('[^a-z0-9]', '', piconname.replace('&', 'and').replace('+', 'plus').replace('*', 'star').lower())
 
                     for line in self.lamedb:
@@ -849,7 +856,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         # example output
         # [3147, 1836, 1333, 3206, 3620, 6241, 1019, 1035, 4063, 3753, 5701, 3414, .... ]
 
-        # print "unique sids %s " % self.channelRefs
+        # print("unique sids %s " % self.channelRefs)
 
         self.timer = eTimer()
         self.updateStatus()
@@ -870,7 +877,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
         except Exception as e:
             print(e)
-            print "***********  url failed % s" % url[i]
+            print("***********  url failed % s" % url[i])
             pass
             return None
 
@@ -894,8 +901,8 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
                     if 'program' in channel:
                         if isinstance(channel['program'], dict):
-                            # print "**** program data was dict ****"
-                            # print channel['channelid']
+                            # print("**** program data was dict ****")
+                            # print(channel['channelid'])
                             channel['program'] = [channel['program']]
 
                         if 'channeltype' in channel:
@@ -908,17 +915,17 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
                             start = ''
                             dur = ''
-                            title = ''
+                            ptitle = ''
                             shortDesc = ''
 
                             if 'start' in event:
-                                start = event['start'].encode('utf8')
+                                start = str(event['start'])
                             if 'dur' in event:
-                                dur = event['dur'].encode('utf8')
+                                dur = str(event['dur'])
                             if 'title' in event:
-                                ptitle = event['title'].encode('utf8')
+                                ptitle = str(event['title'])
                             if 'shortDesc' in event:
-                                shortDesc = event['shortDesc'].encode('utf8')
+                                shortDesc = str(event['shortDesc'])
 
                             event.clear()
                             event['start'] = start
@@ -927,13 +934,13 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                             event['shortDesc'] = shortDesc
 
                     else:
-                        print "program missing"
-                        print json.dumps(result)
+                        print("program missing")
+                        print(json.dumps(result))
 
                 try:
                     self.result_list.append(result)
                 except ValueError as e:
-                    print e
+                    print(e)
                     pass
                 except Exception as e:
                     print(e)
@@ -950,10 +957,10 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                 self.result_list = []
 
             else:
-                print "channels missing"
+                print("channels missing")
 
         else:
-            print "log_epg_result. download error"
+            print("log_epg_result. download error")
 
     def createEPGDataChunks(self):
         # print("*** createEPGDataChunks ***")
@@ -963,8 +970,8 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         channelChunkRefs = list(self.create_chunks(self.channelRefs, 10))
         channelChunkRefsLength = len(channelChunkRefs)
 
-        # print "channelChunkLength %s" % channelChunkRefsLength
-        # print "channelChunkRefs %s" %   channelChunkRefs
+        # print("channelChunkLength %s" % channelChunkRefsLength)
+        # print("channelChunkRefs %s" %   channelChunkRefs)
 
         for c in range(0, channelChunkRefsLength):
 
@@ -1022,8 +1029,8 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                         if 'program' in channel:
 
                             if isinstance(channel['program'], dict):
-                                print "**** program data was dict ****"
-                                print channel['channelid']
+                                print("**** program data was dict ****")
+                                print(channel['channelid'])
                                 channel['program'] = [channel['program']]
 
                             if 'channeltype' in channel:
@@ -1054,13 +1061,13 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                                 event['shortDesc'] = shortDesc
 
                         else:
-                            print "program missing"
-                            print json.dumps(result)
+                            print("program missing")
+                            print(json.dumps(result))
 
                     try:
                         self.result_list.append(result)
                     except ValueError as e:
-                        print e
+                        print(e)
                         pass
                     except Exception as e:
                         print(e)
@@ -1077,10 +1084,10 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                     self.result_list = []
 
                 else:
-                    print "channels missing"
+                    print("channels missing")
 
             else:
-                print "log_epg_result. download error"
+                print("log_epg_result. download error")
                 """
 
         pool.close()
@@ -1104,6 +1111,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         print(" *** buildxmltvchannelfile ***")
 
         with open('/etc/enigma2/SlykEpg7day/combinedepgdata.json', 'w') as f:
+            # print(self.channels_all)
             json.dump(self.channels_all, f)
 
         # remove old files
@@ -1226,17 +1234,17 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
                             """
                             if 'title' not in day:
-                                print "buildXMLTVProgramsFile title missing"
-                                print "current program %s" % json.dumps(day)
+                                print("buildXMLTVProgramsFile title missing")
+                                print("current program %s" % json.dumps(day))
                             if 'start' not in day:
-                                print "buildXMLTVProgramsFile start missing"
-                                print "current program %s" % json.dumps(day)
+                                print("buildXMLTVProgramsFile start missing")
+                                print("current program %s" % json.dumps(day))
                             if 'dur' not in day:
-                                print "buildXMLTVProgramsFile dur missing"
-                                print "current program %s" % json.dumps(day)
+                                print("buildXMLTVProgramsFile dur missing")
+                                print("current program %s" % json.dumps(day))
                             if 'shortDesc' not in day:
-                                print "buildXMLTVProgramsFile shortDesc missing"
-                                print "current program %s" % json.dumps(day)
+                                print("buildXMLTVProgramsFile shortDesc missing")
+                                print("current program %s" % json.dumps(day))
                                 """
 
                             timeshift = cfg.timeshift.value * 100
@@ -1254,8 +1262,8 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                             try:
                                 start = '%s %s' % (startconvert, plusone)
                                 stop = '%s %s' % (stopconvert, plusone)
-                            except Exception, e:
-                                print e
+                            except Exception as e:
+                                print(e)
 
                             res.write('  <programme start="%s" stop="%s" channel="%s">\n' % (start, stop, channel['ID']))
                             res.write('    <title lang="en"><![CDATA[%s]]></title>\n' % (day['title']))
@@ -1263,7 +1271,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                             res.write('  </programme>\n')
 
                 else:
-                    print "buildXMLTVProgramsFile program missing"
+                    print("buildXMLTVProgramsFile program missing")
 
                 if haslzma is False or cfg.compress.value is False:
                     with open(channelpath, 'a+') as f:

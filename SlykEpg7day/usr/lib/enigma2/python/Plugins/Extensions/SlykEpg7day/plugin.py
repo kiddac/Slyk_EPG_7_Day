@@ -1,11 +1,12 @@
-from Components.config import *
-from enigma import getDesktop, addFont, eTimer
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+from . import _
+from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigEnableDisable, ConfigClock, ConfigSelection, ConfigText, ConfigSelectionNumber
+from enigma import getDesktop, eTimer
 from Plugins.Plugin import PluginDescriptor
 import time
-import os
-import socket
 from boxbranding import getImageDistro
-import time
 
 screenwidth = getDesktop(0).size()
 
@@ -185,8 +186,8 @@ class AutoStartTimer:
         self.update(atLeast)
 
     def runUpdate(self):
-        print '\n *********** Import Slyk EPG 7 Day ************ \n'
-        import main
+        print('\n *********** Import Slyk EPG 7 Day ************ \n')
+        from . import main
         self.session.open(main.SlykEpg7Day_Main, "auto")
 
 
@@ -200,7 +201,7 @@ def autostart(reason, session=None, **kwargs):
 
 
 def main(session, **kwargs):
-    import main
+    from . import main
     session.open(main.SlykEpg7Day_Main, "manual")
 
 
