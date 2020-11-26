@@ -162,14 +162,14 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         self.setTitle(self.setup_title)
 
     def initConfig(self):
-        self.cfg_region = getConfigListEntry('Primary Sky Region'), cfg.region, _('Select the main region for your EPG.')
-        self.cfg_enabled = getConfigListEntry('Automatic import Slyk EPG'), cfg.enabled, _('Select to automatically download EPG data daily.')
-        self.cfg_wakeup = getConfigListEntry('Automatic start time'), cfg.wakeup, _('Select the daily download time.\nSelect a random unique time and not on the hour like 8:00am.\nHelp prevent server overload.')
-        self.cfg_epgDescDays = getConfigListEntry('Load EPG descriptions up to X days'), cfg.epgDescDays, _('Select the maximum number of days you would like to download EPG data for. 1 - 7 days.')
-        self.cfg_timeshift = getConfigListEntry('EPG timeshift offset'), cfg.timeshift, _('Adjust the timeshift according to UK Daylight Saving Time and/or your local timezone.\nUK: Summer = 1, Winter = 0')
-        self.cfg_lamedb = getConfigListEntry('Use provided Sat 28.2e lamedb file'), cfg.lamedb, _('Select this option if you do not have 28.2e satellite feeds. i.e UK Cable with no satellite/None UK/IPTV only.')
-        self.cfg_rytecIDs = getConfigListEntry('XMLTV Channel ID references'), cfg.rytec, _("Select whether to try and match Rytec's original EPG IDs or whether just to create unique IDs for the XMLTV files.")
-        self.cfg_compress = getConfigListEntry('Compress XMLTV programme data (slower)'), cfg.compress, _('Select to compress the XMLTV files if harddrive space is limited.')
+        self.cfg_region = getConfigListEntry('Primary Sky Region', cfg.region, _('Select the main region for your EPG.'))
+        self.cfg_enabled = getConfigListEntry('Automatic import Slyk EPG', cfg.enabled, _('Select to automatically download EPG data daily.'))
+        self.cfg_wakeup = getConfigListEntry('Automatic start time', cfg.wakeup, _('Select the daily download time.\nSelect a random unique time and not on the hour like 8:00am.\nHelp prevent server overload.'))
+        self.cfg_epgDescDays = getConfigListEntry('Load EPG descriptions up to X days', cfg.epgDescDays, _('Select the maximum number of days you would like to download EPG data for. 1 - 7 days.'))
+        self.cfg_timeshift = getConfigListEntry('EPG timeshift offset', cfg.timeshift, _('Adjust the timeshift according to UK Daylight Saving Time and/or your local timezone.\nUK: Summer = 1, Winter = 0'))
+        self.cfg_lamedb = getConfigListEntry('Use provided Sat 28.2e lamedb file', cfg.lamedb, _('Select this option if you do not have 28.2e satellite feeds. i.e UK Cable with no satellite/None UK/IPTV only.'))
+        self.cfg_rytecIDs = getConfigListEntry('XMLTV Channel ID references', cfg.rytec, _("Select whether to try and match Rytec's original EPG IDs or whether just to create unique IDs for the XMLTV files."))
+        self.cfg_compress = getConfigListEntry('Compress XMLTV programme data (slower)', cfg.compress, _('Select to compress the XMLTV files if harddrive space is limited.'))
 
     def createSetup(self):
         self.list = []
