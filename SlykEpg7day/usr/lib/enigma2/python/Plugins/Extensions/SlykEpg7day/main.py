@@ -1,16 +1,14 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 from . import _
 from .plugin import cfg, screenwidth, regionbouquets
 from Components.ActionMap import ActionMap
 from Components.ConfigList import ConfigListScreen
-from Components.config import configfile, getConfigListEntry
+from Components.config import config, configfile, getConfigListEntry, ConfigEnableDisable
 from Components.Label import Label
 from Components.Sources.StaticText import StaticText
 from enigma import eTimer
 from multiprocessing.pool import ThreadPool
 from os import system
+from Screens.Console import Console
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
 
@@ -59,7 +57,19 @@ except ImportError:
 class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
     def __init__(self, session, runtype):
+        Screen.__init__(self, session)
+        self.session = session
+
         self.runtype = runtype
+
+        self.setup_title = 'Slyk EPG 7 Day Downloader'
+
+        self.onChangedEntry = []
+        self.list = []
+        ConfigListScreen.__init__(self, self.list, session=self.session, on_change=self.changedEntry)
+
+        self.pause = 100
+        self.running = False
 
         if self.runtype == "manual":
 
@@ -110,14 +120,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                         <widget name="status" position="40,e-80" size="760,28" font="Regular;30" valign="center" transparent="1" foregroundColor="#6dcff6" />
                     </screen>"""
 
-        Screen.__init__(self, session)
-        self.session = session
-
-        if self.runtype == "manual":
             self.skin = skin
-            self.setup_title = 'Slyk EPG 7 Day Downloader'
-
-            self.onChangedEntry = []
 
             self['actions'] = ActionMap(['SetupActions', 'ColorActions'], {
                 'cancel': self.cancel,
@@ -135,28 +138,35 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self['status'] = Label('')
             self['description'] = Label('')
 
-            self.list = []
-            ConfigListScreen.__init__(self, self.list, session=self.session, on_change=self.changedEntry)
+            self.onFirstExecBegin.append(self.check_dependencies)
 
-            self.initConfig()
-            self.createSetup()
+            #
+            #
+            # self.updateTimer = enigma.eTimer()
+            # self.updateTimer.callback.append(self.updateStatus)
+            # self.updateTimer.start(1000)
 
-            self.pause = 100
-            self.running = False
-
-            self.updateTimer = enigma.eTimer()
-            self.updateTimer.callback.append(self.updateStatus)
-            self.updateTimer.start(1000)
-
-            self.updateStatus()
+            # self.updateStatus()
 
             self.onLayoutFinish.append(self.__layoutFinished)
 
         if self.runtype == "auto":
-            self.pause = 100
-            self.running = False
-            self['status'] = Label('')
             self.auto()
+
+    def check_dependencies(self):
+        dependencies = True
+
+        try:
+            from multiprocessing.pool import ThreadPool
+        except:
+            dependencies = False
+
+        if dependencies is False:
+            chmod("/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/dependencies.sh", 0o0755)
+            cmd1 = ". /usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/dependencies.sh"
+            self.session.openWithCallback(self.initConfig, Console, title="Checking Python Dependencies", cmdlist=[cmd1], closeOnSuccess=False)
+        else:
+            self.initConfig()
 
     def __layoutFinished(self):
         self.setTitle(self.setup_title)
@@ -170,11 +180,11 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         self.cfg_lamedb = getConfigListEntry('Use provided Sat 28.2e lamedb file', cfg.lamedb, _('Select this option if you do not have 28.2e satellite feeds. i.e UK Cable with no satellite/None UK/IPTV only.'))
         self.cfg_rytecIDs = getConfigListEntry('XMLTV Channel ID references', cfg.rytec, _("Select whether to try and match Rytec's original EPG IDs or whether just to create unique IDs for the XMLTV files."))
         self.cfg_compress = getConfigListEntry('Compress XMLTV programme data (slower)', cfg.compress, _('Select to compress the XMLTV files if harddrive space is limited.'))
+        self.createSetup()
 
     def createSetup(self):
         self.list = []
         self.list.append(self.cfg_region)
-
         self.list.append(self.cfg_enabled)
 
         if cfg.enabled.value is True:
@@ -189,27 +199,21 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         self['config'].l.setList(self.list)
 
     def changedEntry(self):
+        self.item = self['config'].getCurrent()
         for x in self.onChangedEntry:
             x()
 
+        try:
+            if isinstance(self['config'].getCurrent()[1], ConfigEnableDisable):
+                self.createSetup()
+        except:
+            pass
+
     def getCurrentEntry(self):
-        return self["config"].getCurrent()[0]
+        return self['config'].getCurrent() and self['config'].getCurrent()[0] or ''
 
     def getCurrentValue(self):
-        return str(self["config"].getCurrent()[1].getText())
-
-    def newConfig(self):
-        cur = self["config"].getCurrent()
-        if cur == self.cfg_enabled:
-            self.createSetup()
-
-    def keyLeft(self):
-        ConfigListScreen.keyLeft(self)
-        self.newConfig()
-
-    def keyRight(self):
-        ConfigListScreen.keyRight(self)
-        self.newConfig()
+        return self['config'].getCurrent() and str(self['config'].getCurrent()[1].getText()) or ''
 
     def save(self):
         if self.running is True:
@@ -481,20 +485,9 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         self.timer.callback.append(self.combineJsonFiles)
 
     def combineJsonFiles(self):
-        # print("**** combineJsonFiles ***")
         regionb = regionbouquets.get(cfg.region.value)
 
-        """
-        with open('/etc/enigma2/SlykEpg7day/channelsBasic.json', 'w') as f:
-            json.dump(self.channelsBasic, f)
-            """
-
         self.channels_all = [channels['init']['channels'] for channels in self.channelsBasic]
-
-        """
-        with open('/etc/enigma2/SlykEpg7day/channels_json.json', 'w') as f:
-            json.dump(self.channels_all, f)
-            """
 
         # move selected sky region to top of lists.
         x = 0
@@ -508,11 +501,6 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.channels_all[0] = list({x['c'][0]: x for x in self.channels_all[i] + self.channels_all[0]}.values())
 
         self.channels_all = self.channels_all[0]
-
-        """
-        with open('/etc/enigma2/SlykEpg7day/combinedepgdata3.json', 'w') as f:
-            json.dump(self.channels_all, f)
-            """
 
         # cleanup
         del self.channelsBasic
@@ -543,11 +531,6 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             # add new fields
             channel['refs'] = []
             channel['program'] = []
-
-        """
-        with open('/etc/enigma2/SlykEpg7day/combinedepgdata4.json', 'w') as f:
-            json.dump(self.channels_all, f)
-            """
 
         self.timer = eTimer()
         self.statusDescription = "Building EPG IDs..."
@@ -833,12 +816,6 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
         del self.lamedb
 
-        """
-        ###################################################################################
-        with open('/etc/enigma2/SlykEpg7day/combinedepgdata6.json', 'w') as f:
-            json.dump(self.channels_all, f)
-            """
-
         # example output
         # {"c": [3147, 507, 16, 1], "refs": ["cf9b:011a0000:083a:0002:25:0:0"], "program": [], "t": "NHK World HD", "ID": "nhkworldhd.slyk"}
 
@@ -878,13 +855,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         except Exception as e:
             print(e)
             print("***********  url failed % s" % url[i])
-            pass
             return None
-
-        """
-        if response != '':
-            return json.load(response)
-            """
 
     def log_epg_result(self, result):
 
@@ -970,9 +941,6 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         channelChunkRefs = list(self.create_chunks(self.channelRefs, 10))
         channelChunkRefsLength = len(channelChunkRefs)
 
-        # print("channelChunkLength %s" % channelChunkRefsLength)
-        # print("channelChunkRefs %s" %   channelChunkRefs)
-
         for c in range(0, channelChunkRefsLength):
 
             for d in range(0, int(cfg.epgDescDays.value)):
@@ -1011,84 +979,6 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
         for i in range(0, urllength):
             pool.apply_async(self.fetch_url2, args=(self.EPGUrlDownloadList, i), callback=self.log_epg_result)
-
-        # results = pool.imap_unordered(self.fetch_url2, self.EPGUrlDownloadList)
-
-        """
-        for result in results:
-            if result:
-
-                if 'channels' in result:
-                    if isinstance(result['channels'], dict):
-                        templist = []
-                        templist.append(result['channels'])
-                        result['channels'] = templist
-
-                    for channel in result['channels']:
-
-                        if 'program' in channel:
-
-                            if isinstance(channel['program'], dict):
-                                print("**** program data was dict ****")
-                                print(channel['channelid'])
-                                channel['program'] = [channel['program']]
-
-                            if 'channeltype' in channel:
-                                del channel['channeltype']
-
-                            if 'genre' in channel:
-                                del channel['genre']
-
-                            for event in channel['program']:
-                                start = ''
-                                dur = ''
-                                title = ''
-                                shortDesc = ''
-                                if 'start' in event:
-                                    start = event['start'].encode('utf8')
-                                if 'dur' in event:
-                                    dur = event['dur'].encode('utf8')
-                                if 'title' in event:
-                                    ptitle = event['title'].encode('utf8')
-                                if 'shortDesc' in event:
-                                    shortDesc = event['shortDesc'].encode('utf8')
-
-                                event.clear()
-
-                                event['start'] = start
-                                event['dur'] = dur
-                                event['title'] = ptitle
-                                event['shortDesc'] = shortDesc
-
-                        else:
-                            print("program missing")
-                            print(json.dumps(result))
-
-                    try:
-                        self.result_list.append(result)
-                    except ValueError as e:
-                        print(e)
-                        pass
-                    except Exception as e:
-                        print(e)
-                        pass
-
-                    for channel in self.channels_all:
-                        for entry in self.result_list:
-                            for x in entry['channels']:
-                                if x['channelid'] == str(channel['sid']):
-                                    channel['program'].append(x['program'])
-                                    # del x
-                                    break
-
-                    self.result_list = []
-
-                else:
-                    print("channels missing")
-
-            else:
-                print("log_epg_result. download error")
-                """
 
         pool.close()
         pool.join()
@@ -1231,22 +1121,6 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                 if 'program' in channel:
                     for program in channel['program']:
                         for day in program:
-
-                            """
-                            if 'title' not in day:
-                                print("buildXMLTVProgramsFile title missing")
-                                print("current program %s" % json.dumps(day))
-                            if 'start' not in day:
-                                print("buildXMLTVProgramsFile start missing")
-                                print("current program %s" % json.dumps(day))
-                            if 'dur' not in day:
-                                print("buildXMLTVProgramsFile dur missing")
-                                print("current program %s" % json.dumps(day))
-                            if 'shortDesc' not in day:
-                                print("buildXMLTVProgramsFile shortDesc missing")
-                                print("current program %s" % json.dumps(day))
-                                """
-
                             timeshift = cfg.timeshift.value * 100
                             if timeshift < 0:
                                 plusone = "-0%s" % (timeshift)
