@@ -449,14 +449,21 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             temp = json.load(result[0])
 
             for channel in temp['init']['channels']:
-                channel['b'] = b
-                channel['sb'] = sb
+            
+                try:
+                    channel['b'] = b
+                    channel['sb'] = sb
 
-                for region in self.regions['regions']:
+                    for region in self.regions['regions']:
 
-                    if str(channel['b']) == str(region['b']) and str(channel['sb']) == str(region['sb']):
-                        channel['n'] = region['n'] + " " + region['t']
-                        break
+                        try:
+                            if str(channel['b']) == str(region['b']) and str(channel['sb']) == str(region['sb']):
+                                channel['n'] = region['n'] + " " + region['t']
+                                break
+                        except Exception as e:
+                            print(e)
+                except Exception as e:
+                    print(e)
 
             self.channelsBasic.append(temp)
         else:
@@ -492,9 +499,13 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         # move selected sky region to top of lists.
         x = 0
         for channels in self.channels_all:
-            if channels[0]['b'] == str(regionb[0]) and channels[0]['sb'] == str(regionb[1]):
-                self.channels_all.insert(0, self.channels_all.pop(x))
-                break
+            try:
+                if channels[0]['b'] == str(regionb[0]) and channels[0]['sb'] == str(regionb[1]):
+                    self.channels_all.insert(0, self.channels_all.pop(x))
+                    break
+            except Exception as e:
+                print(e)
+
             x += 1
 
         for i in range(len(self.channels_all)):
@@ -513,8 +524,11 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
     def removeUnusedFields1(self):
         # print ("****** removeUnusedFields ****")
+        
+        print("******************* self.channels_all", str(self.channels_all))
 
         for channel in self.channels_all:
+        
             temp1 = channel['c'][0]
             temp2 = channel['t']
             temp3 = channel['lcn']
