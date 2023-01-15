@@ -1,34 +1,29 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 from . import _
-from .plugin import cfg, screenwidth, regionbouquets
+from .plugin import cfg, screenwidth, regionbouquets, hasConcurrent, hasMultiprocessing, pythonFull, pythonVer, hdr
 from Components.ActionMap import ActionMap
 from Components.ConfigList import ConfigListScreen
-from Components.config import config, configfile, getConfigListEntry, ConfigEnableDisable
+from Components.config import configfile, getConfigListEntry, ConfigEnableDisable
 from Components.Label import Label
 from Components.Sources.StaticText import StaticText
 from enigma import eTimer
-from multiprocessing.pool import ThreadPool
-from os import system
+# from multiprocessing.pool import ThreadPool
 from Screens.Console import Console
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
+from requests.adapters import HTTPAdapter
 
 import datetime
 import json
 import os
-import enigma
+# import enigma
 import csv
 import unicodedata
 import re
-import sys
-
-pythonVer = 2
-if sys.version_info.major == 3:
-    pythonVer = 3
-
-if pythonVer == 3:
-    from urllib.request import urlopen, Request
-else:
-    from urllib2 import urlopen, Request
+# import sys
+import requests
 
 try:
     from cStringIO import StringIO
@@ -130,23 +125,15 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                 'yellow': self.manual
             }, -2)
 
-            self['key_red'] = StaticText('Cancel')
-            self['key_green'] = StaticText('Save')
-            self['key_yellow'] = StaticText('Download')
+            self['key_red'] = StaticText(_('Cancel'))
+            self['key_green'] = StaticText(_('Save'))
+            self['key_yellow'] = StaticText(_('Download'))
             self['key_blue'] = StaticText('')
 
             self['status'] = Label('')
             self['description'] = Label('')
 
             self.onFirstExecBegin.append(self.check_dependencies)
-
-            #
-            #
-            # self.updateTimer = enigma.eTimer()
-            # self.updateTimer.callback.append(self.updateStatus)
-            # self.updateTimer.start(1000)
-
-            # self.updateStatus()
 
             self.onLayoutFinish.append(self.__layoutFinished)
 
@@ -157,12 +144,13 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         dependencies = True
 
         try:
-            from multiprocessing.pool import ThreadPool
+            if pythonFull < 3.9:
+                from multiprocessing.pool import ThreadPool
         except:
             dependencies = False
 
         if dependencies is False:
-            chmod("/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/dependencies.sh", 0o0755)
+            os.chmod("/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/dependencies.sh", 0o0755)
             cmd1 = ". /usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/dependencies.sh"
             self.session.openWithCallback(self.initConfig, Console, title="Checking Python Dependencies", cmdlist=[cmd1], closeOnSuccess=False)
         else:
@@ -239,30 +227,40 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.close()
 
     def clear_caches(self):
-        system("echo 1 > /proc/sys/vm/drop_caches")
-        system("echo 2 > /proc/sys/vm/drop_caches")
-        system("echo 3 > /proc/sys/vm/drop_caches")
+        try:
+            os.system("echo 1 > /proc/sys/vm/drop_caches")
+            os.system("echo 2 > /proc/sys/vm/drop_caches")
+            os.system("echo 3 > /proc/sys/vm/drop_caches")
+        except:
+            pass
 
     def manual(self):
         if self.running is True:
             return
         self.running = True
         self.clear_caches()
-
-        self.timer = eTimer()
         self.statusDescription = "Reading Lamedb files..."
         self.updateStatus()
+
+        self.timer = eTimer()
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.loadLamedbFile)
+        except:
+            self.timer.callback.append(self.loadLamedbFile)
+
         self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.loadLamedbFile)
 
     def auto(self):
         self.running = True
         self.clear_caches()
-        self.timer = eTimer()
         self.statusDescription = "Reading Lamedb files..."
         self.updateStatus()
+        self.timer = eTimer()
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.loadLamedbFile)
+        except:
+            self.timer.callback.append(self.loadLamedbFile)
         self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.loadLamedbFile)
 
     def loadLamedbFile(self):
         self.lamedb = []
@@ -312,7 +310,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
                             # check for 28.2e sat
                             if dataline.startswith('s'):
-                                if':282:' in dataline:
+                                if ':282:' in dataline:
 
                                     dvbline = dvbline.split(':')
                                     namespace = dvbline[0]
@@ -349,8 +347,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
                             if any(x in DBVStreamData for x in satTransponders):
                                 if not ChannelName.isdigit() and ChannelName != "" and ChannelName not in ignorelist and "XXX" not in ChannelName and '2:0:0' not in DBVStreamData and "0x" not in ChannelName:
-                                    lamedbsat.append([DBVStreamData, ChannelName, piconChannelName])
-
+                                    lamedbsat.append([str(DBVStreamData), str(ChannelName), str(piconChannelName)])
             else:
                 print("file read error")
 
@@ -385,31 +382,43 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         # print("SlykEPG: List of sat namespaces: %s" % (satTransponders))
         # print("SlykEPG: Corresponding Lamedb sat entries: %s" % (len(self.lamedb)))
 
-        self.timer = eTimer()
         self.statusDescription = "Downloading Sky regions data..."
         self.updateStatus()
+        self.timer = eTimer()
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.downloadRegions)
+        except:
+            self.timer.callback.append(self.downloadRegions)
         self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.downloadRegions)
 
     def downloadRegions(self):
-        response = ''
+        r = ''
         # all current regions
         regionsUrl = 'http://epgservices.sky.com/0.0.0/api/2.1/regions/json/'
 
+        adapter = HTTPAdapter(max_retries=0)
+        http = requests.Session()
+        http.mount("http://", adapter)
+        http.mount("https://", adapter)
+
         try:
-            response = urlopen(regionsUrl, timeout=10)
+            r = http.get(regionsUrl, headers=hdr, stream=True, timeout=(10), verify=False)
+            r.raise_for_status()
+            if r.status_code == requests.codes.ok:
+                try:
+                    content = r.json()
+                except Exception as e:
+                    print(e)
         except Exception as e:
             print(e)
             self.urlList = []
-            pass
 
         downloadRegionList = []
 
-        if response != '':
-
+        if content:
             bouquet = ''
             subbouquet = ''
-            self.regions = json.load(response)
+            self.regions = content
             for region in self.regions['regions']:
                 if 'b' in region and 'sb' in region and 't' in region:
                     bouquet = region['b']
@@ -419,77 +428,110 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
             self.urlList = ['http://epgservices.sky.com/5.1.1/api/2.1/region/json/%s/%s' % (region[0], region[1]) for region in downloadRegionList]
 
-        self.timer = eTimer()
         self.statusDescription = "Downloading basic channel data..."
         self.updateStatus()
-        self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.getJson)
-
-    def fetch_url(self, url, i):
-        # print(url[i])
-        response = ''
+        self.timer = eTimer()
         try:
-            response = urlopen(url[i], timeout=10)
+            self.timer_conn = self.timer.timeout.connect(self.getJson)
+        except:
+            self.timer.callback.append(self.getJson)
+        self.timer.start(self.pause, 1)
+
+    def download_url(self, url):
+        # index = url[1]
+        r = ""
+        adapter = HTTPAdapter()
+        http = requests.Session()
+        http.mount("http://", adapter)
+        http.mount("https://", adapter)
+        try:
+            r = http.get(url, headers=hdr, timeout=10, verify=False, stream=True)
+            r.raise_for_status()
+            if r.status_code == requests.codes.ok:
+                try:
+                    response = r.json()
+                    return response, url
+                except:
+                    return "", url
+
         except Exception as e:
             print(e)
-            print("***********  url failed % s" % url[i])
-            return None
 
-        if response != '':
-            return response, url[i]
+        return "", url
 
-    def log_result(self, result):
-        if result[0] is not None:
-
-            # add in region bouquets IDs and name
-            region = result[1].split("/")
-            sb = region[-1]
-            b = region[-2]
-
-            temp = json.load(result[0])
-
-            for channel in temp['init']['channels']:
-            
-                try:
-                    channel['b'] = b
-                    channel['sb'] = sb
-
-                    for region in self.regions['regions']:
-
-                        try:
-                            if str(channel['b']) == str(region['b']) and str(channel['sb']) == str(region['sb']):
-                                channel['n'] = region['n'] + " " + region['t']
-                                break
-                        except Exception as e:
-                            print(e)
-                except Exception as e:
-                    print(e)
-
-            self.channelsBasic.append(temp)
-        else:
-            print("log_result is none.")
-
-    # use pooling to download json files concurrently for faster downloads.
     def getJson(self):
         self.channelsBasic = []
-        urllength = len(self.urlList)
+        # urllength = len(self.urlList)
 
-        pool = ThreadPool(8)
-        for i in range(urllength):
-            pool.apply_async(self.fetch_url, args=(self.urlList, i), callback=self.log_result)
+        threads = len(self.urlList)
+        if threads > 10:
+            threads = 10
 
-        pool.close()
-        pool.join()
+        if hasConcurrent:
+            print("******* trying concurrent futures ******")
+            try:
+                from concurrent.futures import ThreadPoolExecutor
+                executor = ThreadPoolExecutor(max_workers=threads)
+
+                with executor:
+                    results = executor.map(self.download_url, self.urlList)
+            except Exception as e:
+                print(e)
+
+        elif hasMultiprocessing:
+            print("********** trying multiprocessing threadpool *******")
+            try:
+                from multiprocessing.pool import ThreadPool
+                pool = ThreadPool(threads)
+                results = pool.imap_unordered(self.download_url, self.urlList)
+                pool.close()
+                pool.join()
+
+            except Exception as e:
+                print(e)
+
+        for response, url in results:
+            if response:
+
+                # add in region bouquets IDs and name
+                region = url.split("/")
+                sb = region[-1]
+                b = region[-2]
+
+                for channel in response['init']['channels']:
+
+                    try:
+                        channel['b'] = b
+                        channel['sb'] = sb
+
+                        for region in self.regions['regions']:
+
+                            try:
+                                if str(channel['b']) == str(region['b']) and str(channel['sb']) == str(region['sb']):
+                                    channel['n'] = region['n'] + " " + region['t']
+                                    break
+                            except Exception as e:
+                                print(e)
+                    except Exception as e:
+                        print(e)
+
+                self.channelsBasic.append(response)
+            else:
+                print("log_result is none.")
 
         # cleanup
+
         del self.urlList
         del self.regions
 
-        self.timer = eTimer()
         self.statusDescription = "Combining channel data..."
         self.updateStatus()
+        self.timer = eTimer()
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.combineJsonFiles)
+        except:
+            self.timer.callback.append(self.combineJsonFiles)
         self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.combineJsonFiles)
 
     def combineJsonFiles(self):
         regionb = regionbouquets.get(cfg.region.value)
@@ -516,19 +558,22 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         # cleanup
         del self.channelsBasic
 
-        self.timer = eTimer()
         self.statusDescription = "Cleaning Up data..."
         self.updateStatus()
+        self.timer = eTimer()
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.removeUnusedFields1)
+        except:
+            self.timer.callback.append(self.removeUnusedFields1)
         self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.removeUnusedFields1)
 
     def removeUnusedFields1(self):
         # print ("****** removeUnusedFields ****")
-        
-        print("******************* self.channels_all", str(self.channels_all))
+
+        # print("******************* self.channels_all", str(self.channels_all))
 
         for channel in self.channels_all:
-        
+
             temp1 = channel['c'][0]
             temp2 = channel['t']
             temp3 = channel['lcn']
@@ -546,11 +591,17 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             channel['refs'] = []
             channel['program'] = []
 
-        self.timer = eTimer()
         self.statusDescription = "Building EPG IDs..."
         self.updateStatus()
+
+        # print("******************* self.channels_all", str(self.channels_all))
+
+        self.timer = eTimer()
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.makeEpgID)
+        except:
+            self.timer.callback.append(self.makeEpgID)
         self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.makeEpgID)
 
     def makeEpgID(self):
         regionb = regionbouquets.get(cfg.region.value)
@@ -582,30 +633,22 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                 continue
 
         for channel in self.channels_all:
-
-            # ITV Regions
-            if channel['sid'] == 6089:
-                channel['t'] = "ITV Anglia East"
-            elif channel['sid'] == 1045:
-                channel['t'] = "ITV Anglia HD"
-            elif channel['sid'] == 6128:
-                channel['t'] = "ITV +1 Anglia"
-            elif channel['sid'] == 6110:
-                channel['t'] = "ITV Border"
+            if channel['sid'] == 1045:
+                channel['t'] = "ITV Anglia East HD"
+            elif channel['sid'] == 1217:
+                channel['t'] = "ITV Anglia West HD"
             elif channel['sid'] == 1061:
                 channel['t'] = "ITV Border England HD"
             elif channel['sid'] == 1020:
                 channel['t'] = "ITV Border Scotland"
-            elif channel['sid'] == 6381:
-                channel['t'] = "ITV Anglia West"
+            elif channel['sid'] == 1219:
+                channel['t'] = "ITV Central East HD"
             elif channel['sid'] == 6300:
-                channel['t'] = "ITV Central"
+                channel['t'] = "ITV Central West"
             elif channel['sid'] == 6503:
                 channel['t'] = "ITV Central West HD"
             elif channel['sid'] == 6145:
-                channel['t'] = "ITV +1 Central"
-            elif channel['sid'] == 6011:
-                channel['t'] = "ITV Central East"
+                channel['t'] = "ITV +1 Central West"
             elif channel['sid'] == 6200:
                 channel['t'] = "ITV Channel Isles"
             elif channel['sid'] == 6130:
@@ -614,54 +657,36 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                 channel['t'] = "ITV Granada HD"
             elif channel['sid'] == 6355:
                 channel['t'] = "ITV +1 Granada"
-            elif channel['sid'] == 6143:
-                channel['t'] = "ITV Meridian North"
-            elif channel['sid'] == 6142:
-                channel['t'] = "ITV Meridian East"
-            elif channel['sid'] == 6390:
-                channel['t'] = "ITV Tyne Tees"
-            elif channel['sid'] == 1043:
-                channel['t'] = "ITV Tyne Tees HD"
-            elif channel['sid'] == 6126:
-                channel['t'] = "ITV +1 Tyne Tees"
-            elif channel['sid'] == 6020:
-                channel['t'] = "ITV Wales"
-            elif channel['sid'] == 6501:
-                channel['t'] = "ITV Wales HD"
-            elif channel['sid'] == 6012:
-                channel['t'] = "ITV +1 Wales"
-            elif channel['sid'] == 6030:
-                channel['t'] = "ITV West"
-            elif channel['sid'] == 1063:
-                channel['t'] = "ITV Westcountry West HD"
-            elif channel['sid'] == 6127:
-                channel['t'] = "ITV +1 West"
-            elif channel['sid'] == 6040:
-                channel['t'] = "ITV West Country"
-            elif channel['sid'] == 1062:
-                channel['t'] = "ITV Westcountry SW HD"
-            elif channel['sid'] == 6125:
-                channel['t'] = "ITV +1 West Country"
-            elif channel['sid'] == 6140:
-                channel['t'] = "ITV Meridian South"
-            elif channel['sid'] == 6502:
-                channel['t'] = "ITV Meridian South HD"
-            elif channel['sid'] == 6365:
-                channel['t'] = "ITV +1 Meridian"
-            elif channel['sid'] == 6161:
-                channel['t'] = "ITV Yorkshire East"
-            elif channel['sid'] == 1044:
-                channel['t'] = "ITV Yorkshire HD"
-            elif channel['sid'] == 6065:
-                channel['t'] = "ITV +1 Yorkshire"
-            elif channel['sid'] == 6160:
-                channel['t'] = "ITV Yorkshire West"
             elif channel['sid'] == 6000:
                 channel['t'] = "ITV London"
             elif channel['sid'] == 6504:
                 channel['t'] = "ITV London HD"
             elif channel['sid'] == 6155:
                 channel['t'] = "ITV +1 London"
+            elif channel['sid'] == 6142:
+                channel['t'] = "ITV Meridian East"
+            elif channel['sid'] == 1209:
+                channel['t'] = "ITV Meridian South Coast HD"
+            elif channel['sid'] == 1208:
+                channel['t'] = "ITV Meridian Thames Valley HD"
+            elif channel['sid'] == 6502:
+                channel['t'] = "ITV +1 Meridian East"
+            elif channel['sid'] == 1043:
+                channel['t'] = "ITV Tyne Tees HD"
+            elif channel['sid'] == 1062:
+                channel['t'] = "ITV Westcountry SW HD"
+            elif channel['sid'] == 1063:
+                channel['t'] = "ITV Westcountry West HD"
+            elif channel['sid'] == 1214:
+                channel['t'] = "ITV Yorkshire East HD"
+            elif channel['sid'] == 1044:
+                channel['t'] = "ITV Yorkshire West HD"
+            elif channel['sid'] == 6020:
+                channel['t'] = "ITV Wales"
+            elif channel['sid'] == 6501:
+                channel['t'] = "ITV Wales HD"
+            elif channel['sid'] == 6155:
+                channel['t'] = "ITV +1 Wales"
 
             # STV Regions
             elif channel['sid'] == 6325:
@@ -733,11 +758,14 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
             channel['ID'] = self.epgid
 
-        self.timer = eTimer()
         self.statusDescription = "Adding Lamedb service refs to EPG data..."
         self.updateStatus()
+        self.timer = eTimer()
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.addLamedbRefToChannelsJson)
+        except:
+            self.timer.callback.append(self.addLamedbRefToChannelsJson)
         self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.addLamedbRefToChannelsJson)
 
     def addLamedbRefToChannelsJson(self):
         # print("***** addLamedbRefToChannelsJson *****")
@@ -802,28 +830,8 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                         if piconname == line[2]:
                             if line[0] not in channel['refs']:
                                 channel['refs'].append(line[0])
-                                break
+                                # break
 
-                        # catch some older channel names
-                        if piconname == 'skygreats' and line[2] == 'skysuperhero':
-                            if line[0] not in channel['refs']:
-                                channel['refs'].append(line[0])
-                                break
-
-                        if piconname == 'skygreatshd' and line[2] == 'skysuperherohd':
-                            if line[0] not in channel['refs']:
-                                channel['refs'].append(line[0])
-                                break
-
-                        if piconname == 'truestories' and line[2] == 'skydrama':
-                            if line[0] not in channel['refs']:
-                                channel['refs'].append(line[0])
-                                break
-
-                        if piconname == 'trueStorieshd' and line[2] == 'skydramahd':
-                            if line[0] not in channel['refs']:
-                                channel['refs'].append(line[0])
-                                break
         except Exception as e:
             print(e)
         # cleanup
@@ -833,14 +841,18 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         # example output
         # {"c": [3147, 507, 16, 1], "refs": ["cf9b:011a0000:083a:0002:25:0:0"], "program": [], "t": "NHK World HD", "ID": "nhkworldhd.slyk"}
 
-        self.timer = eTimer()
         self.statusDescription = "Downloading full channel data..."
         self.updateStatus()
+
+        self.timer = eTimer()
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.getChannelRefList)
+        except:
+            self.timer.callback.append(self.getChannelRefList)
         self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.getChannelRefList)
 
     def getChannelRefList(self):
-        print("**** getChannelRefList ****")
+        # print("**** getChannelRefList ****")
         # create lists of all the channel numbers
         self.channelRefs = [channel['sid'] for channel in self.channels_all if 'sid' in channel]
 
@@ -849,103 +861,19 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
         # print("unique sids %s " % self.channelRefs)
 
-        self.timer = eTimer()
         self.updateStatus()
+
+        self.timer = eTimer()
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.createEPGDataChunks)
+        except:
+            self.timer.callback.append(self.createEPGDataChunks)
         self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.createEPGDataChunks)
 
     def create_chunks(self, list_name, n):
         # print("***** create_chunks ****")
         for i in range(0, len(list_name), n):
             yield list_name[i:i + n]
-
-    def fetch_url2(self, url, i):
-        # print(url[i])
-        response = ''
-        try:
-            response = urlopen(url[i], timeout=20)
-            return json.load(response)
-
-        except Exception as e:
-            print(e)
-            print("***********  url failed % s" % url[i])
-            return None
-
-    def log_epg_result(self, result):
-
-        if result is not None:
-            # remove unnecessary fields
-
-            if 'channels' in result:
-                if isinstance(result['channels'], dict):
-                    templist = []
-                    templist.append(result['channels'])
-                    result['channels'] = templist
-
-                for channel in result['channels']:
-
-                    if 'program' in channel:
-                        if isinstance(channel['program'], dict):
-                            # print("**** program data was dict ****")
-                            # print(channel['channelid'])
-                            channel['program'] = [channel['program']]
-
-                        if 'channeltype' in channel:
-                            del channel['channeltype']
-
-                        if 'genre' in channel:
-                            del channel['genre']
-
-                        for event in channel['program']:
-
-                            start = ''
-                            dur = ''
-                            ptitle = ''
-                            shortDesc = ''
-
-                            if 'start' in event:
-                                start = str(event['start'])
-                            if 'dur' in event:
-                                dur = str(event['dur'])
-                            if 'title' in event:
-                                ptitle = str(event['title'])
-                            if 'shortDesc' in event:
-                                shortDesc = str(event['shortDesc'])
-
-                            event.clear()
-                            event['start'] = start
-                            event['dur'] = dur
-                            event['title'] = ptitle
-                            event['shortDesc'] = shortDesc
-
-                    else:
-                        print("program missing")
-                        print(json.dumps(result))
-
-                try:
-                    self.result_list.append(result)
-                except ValueError as e:
-                    print(e)
-                    pass
-                except Exception as e:
-                    print(e)
-                    pass
-
-                for channel in self.channels_all:
-                    for entry in self.result_list:
-                        for x in entry['channels']:
-                            if x['channelid'] == str(channel['sid']):
-                                channel['program'].append(x['program'])
-                                # del x
-                                break
-
-                self.result_list = []
-
-            else:
-                print("channels missing")
-
-        else:
-            print("log_epg_result. download error")
 
     def createEPGDataChunks(self):
         # print("*** createEPGDataChunks ***")
@@ -978,31 +906,131 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         # cleanup
         del self.channelRefs
 
-        self.timer = eTimer()
         self.statusDescription = "Downloading individual programme schedules..."
         self.updateStatus()
+        self.timer = eTimer()
+
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.downloadEPGdata)
+        except:
+            self.timer.callback.append(self.downloadEPGdata)
         self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.downloadEPGdata)
 
     def downloadEPGdata(self):
-        print("*** downloadepgdata ***")
-        # self.count = 0
-        urllength = len(self.EPGUrlDownloadList)
+        # print("*** downloadepgdata ***")
+
+        threads = len(self.EPGUrlDownloadList)
+        if threads > 20:
+            threads = 20
+
         self.result_list = []
-        pool = ThreadPool(20)
 
-        for i in range(0, urllength):
-            pool.apply_async(self.fetch_url2, args=(self.EPGUrlDownloadList, i), callback=self.log_epg_result)
+        if hasConcurrent:
+            print("******* trying concurrent futures ******")
+            try:
+                from concurrent.futures import ThreadPoolExecutor
+                executor = ThreadPoolExecutor(max_workers=threads)
 
-        pool.close()
-        pool.join()
+                with executor:
+                    results = executor.map(self.download_url, self.EPGUrlDownloadList)
 
-        self.timer = eTimer()
+            except Exception as e:
+                print(e)
+
+        elif hasMultiprocessing:
+            print("********** trying multiprocessing threadpool *******")
+            try:
+                from multiprocessing.pool import ThreadPool
+                pool = ThreadPool(threads)
+                results = pool.imap_unordered(self.download_url, self.EPGUrlDownloadList)
+                pool.close()
+                pool.join()
+
+            except Exception as e:
+                print(e)
+
+        for result, url in results:
+            if result:
+                if 'channels' in result:
+                    if isinstance(result['channels'], dict):
+                        templist = []
+                        templist.append(result['channels'])
+                        result['channels'] = templist
+
+                    for channel in result['channels']:
+
+                        if 'program' in channel:
+                            if isinstance(channel['program'], dict):
+                                # print("**** program data was dict ****")
+                                # print(channel['channelid'])
+                                channel['program'] = [channel['program']]
+
+                            if 'channeltype' in channel:
+                                del channel['channeltype']
+
+                            if 'genre' in channel:
+                                del channel['genre']
+
+                            for event in channel['program']:
+
+                                start = ''
+                                dur = ''
+                                ptitle = ''
+                                shortDesc = ''
+
+                                if 'start' in event:
+                                    start = str(event['start'])
+                                if 'dur' in event:
+                                    dur = str(event['dur'])
+                                if 'title' in event:
+                                    ptitle = str(event['title'])
+                                if 'shortDesc' in event:
+                                    shortDesc = str(event['shortDesc'])
+
+                                event.clear()
+                                event['start'] = start
+                                event['dur'] = dur
+                                event['title'] = ptitle
+                                event['shortDesc'] = shortDesc
+
+                        else:
+                            print("program missing")
+                            print(json.dumps(result))
+
+                    try:
+                        self.result_list.append(result)
+                    except ValueError as e:
+                        print(e)
+                        pass
+                    except Exception as e:
+                        print(e)
+                        pass
+
+                    for channel in self.channels_all:
+                        for entry in self.result_list:
+                            for x in entry['channels']:
+                                if x['channelid'] == str(channel['sid']):
+                                    channel['program'].append(x['program'])
+                                    # del x
+                                    break
+
+                    self.result_list = []
+
+                else:
+                    print("channels missing")
+
+            else:
+                print("log_result is none.")
+
         self.statusDescription = "Building XMLTV channel file..."
         self.updateStatus()
-        self.timer.start(self.pause, 1)
 
-        self.timer.callback.append(self.buildXMLTVChannelFile)
+        self.timer = eTimer()
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.buildXMLTVChannelFile)
+        except:
+            self.timer.callback.append(self.buildXMLTVChannelFile)
+        self.timer.start(self.pause, 1)
 
     def purge(self, dir, pattern):
         for f in os.listdir(dir):
@@ -1012,7 +1040,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                     os.remove(file_path)
 
     def buildXMLTVChannelFile(self):
-        print(" *** buildxmltvchannelfile ***")
+        # print(" *** buildxmltvchannelfile ***")
 
         with open('/etc/enigma2/SlykEpg7day/combinedepgdata.json', 'w') as f:
             # print(self.channels_all)
@@ -1055,11 +1083,14 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         with open(channelpath, 'w') as f:
             f.write(res)
 
-        self.timer = eTimer()
         self.statusDescription = "Building XMLTV source file..."
         self.updateStatus()
+        self.timer = eTimer()
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.buildXMLTVSourceFile)
+        except:
+            self.timer.callback.append(self.buildXMLTVSourceFile)
         self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.buildXMLTVSourceFile)
 
     def buildXMLTVSourceFile(self):
         # print("*** buildxmltvsourcefile ***")
@@ -1088,11 +1119,14 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             xml_str += '</sources>\n'
             f.write(xml_str)
 
-        self.timer = eTimer()
         self.statusDescription = "Building XMLTV programme schedule file..."
         self.updateStatus()
+        self.timer = eTimer()
+        try:
+            self.timer_conn = self.timer.timeout.connect(self.buildXMLTVProgramsFile)
+        except:
+            self.timer.callback.append(self.buildXMLTVProgramsFile)
         self.timer.start(self.pause, 1)
-        self.timer.callback.append(self.buildXMLTVProgramsFile)
 
     def buildXMLTVProgramsFile(self):
         # print("*** build xmltvprogramsfile ***")

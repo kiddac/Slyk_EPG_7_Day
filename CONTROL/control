@@ -1,8 +1,9 @@
 Package: enigma2-plugin-extensions-slykepg7day
-Version: 2.03_20210625
-Section: extra
+Version: 2.04-20230115
+Section: misc
 Priority: optional
 Architecture: all
-Maintainer: <kiddac2015@gmail.com>
+Maintainer: kiddac
 Description: Slyk EPG 7 day - Sky EPG Downloader
+Depends:
 Source: https://www.linuxsat-support.com

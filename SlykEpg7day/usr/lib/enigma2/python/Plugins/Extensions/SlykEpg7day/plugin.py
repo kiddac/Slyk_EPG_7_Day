@@ -1,14 +1,43 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 from . import _
 from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigEnableDisable, ConfigClock, ConfigSelection, ConfigText, ConfigSelectionNumber
 from enigma import getDesktop, eTimer
 from Plugins.Plugin import PluginDescriptor
 import time
 from boxbranding import getImageDistro
+import sys
+import twisted.python.runtime
+
+try:
+    from multiprocessing.pool import ThreadPool
+    hasMultiprocessing = True
+except:
+    hasMultiprocessing = False
+
+try:
+    from concurrent.futures import ThreadPoolExecutor
+    if twisted.python.runtime.platform.supportsThreads():
+        hasConcurrent = True
+    else:
+        hasConcurrent = False
+except:
+    hasConcurrent = False
+
+pythonFull = float(str(sys.version_info.major) + "." + str(sys.version_info.minor))
+pythonVer = sys.version_info.major
 
 screenwidth = getDesktop(0).size()
 
 autoStartTimer = None
 
+hdr = {
+"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0",
+"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+"Accept-Language": "en-GB,en;q=0.5",
+"Accept-Encoding": "gzip, deflate",
+}
 
 regionlist = [
     ("Atherstone", _("Atherstone")),
