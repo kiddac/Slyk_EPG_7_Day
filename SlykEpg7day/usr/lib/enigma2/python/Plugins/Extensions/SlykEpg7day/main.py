@@ -254,7 +254,6 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         self.running = True
         self.clear_caches()
         self.statusDescription = "Reading Lamedb files..."
-        self.updateStatus()
         self.timer = eTimer()
         try:
             self.timer_conn = self.timer.timeout.connect(self.loadLamedbFile)
