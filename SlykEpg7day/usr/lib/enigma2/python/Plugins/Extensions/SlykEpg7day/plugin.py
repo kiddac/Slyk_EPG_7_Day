@@ -6,7 +6,6 @@ from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigEnabl
 from enigma import getDesktop, eTimer
 from Plugins.Plugin import PluginDescriptor
 import time
-from boxbranding import getImageDistro
 import sys
 import twisted.python.runtime
 
@@ -33,10 +32,10 @@ screenwidth = getDesktop(0).size()
 autoStartTimer = None
 
 hdr = {
-"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0",
-"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-"Accept-Language": "en-GB,en;q=0.5",
-"Accept-Encoding": "gzip, deflate",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-GB,en;q=0.5",
+    "Accept-Encoding": "gzip, deflate",
 }
 
 regionlist = [
@@ -229,29 +228,6 @@ def main(session, **kwargs):
     session.open(main.SlykEpg7Day_Main, "manual")
 
 
-def epgmenu(menuid, **kwargs):
-    if getImageDistro() in ("openvix", "openbh", "ventonsupport", "egami", "openhdf", "opendroid"):
-        if menuid == "epg":
-            return [(_("Slyk EPG 7 Day"), main, "SlykEpg7day", 1003)]
-        else:
-            return []
-    elif getImageDistro() in ("openatv"):
-        if menuid == "epg":
-            return [(_("Slyk EPG 7 Day"), main, "SlykEpg7day", None)]
-        else:
-            return []
-    elif getImageDistro() in ("openmips"):
-        if menuid == "epg_menu":
-            return [(_("Slyk EPG 7 Day"), main, "SlykEpg7day", 96)]
-        else:
-            return []
-    else:
-        if menuid == "setup":
-            return [(_("Slyk EPG 7 Day"), main, "SlykEpg7day", 1003)]
-        else:
-            return []
-
-
 def Plugins(**kwargs):
 
     iconFile = 'icons/slykepg7day.png'
@@ -262,7 +238,6 @@ def Plugins(**kwargs):
     name = _('Slyk EPG 7 Day')
 
     result = [PluginDescriptor(name=name, description=description, where=[PluginDescriptor.WHERE_AUTOSTART, PluginDescriptor.WHERE_SESSIONSTART], fnc=autostart),
-              PluginDescriptor(name=name, description=description, where=PluginDescriptor.WHERE_PLUGINMENU, icon=iconFile, fnc=main),
-              PluginDescriptor(name=name, description=description, where=PluginDescriptor.WHERE_MENU, fnc=epgmenu)]
+              PluginDescriptor(name=name, description=description, where=PluginDescriptor.WHERE_PLUGINMENU, icon=iconFile, fnc=main)]
 
     return result

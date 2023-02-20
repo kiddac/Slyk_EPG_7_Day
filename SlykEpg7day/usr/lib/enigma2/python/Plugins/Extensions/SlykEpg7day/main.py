@@ -1168,7 +1168,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                 if 'program' in channel:
                     for program in channel['program']:
                         for day in program:
-                            timeshift = cfg.timeshift.value * 100
+                            timeshift = int(cfg.timeshift.value) * 100
                             if timeshift < 0:
                                 plusone = "-0%s" % (timeshift)
                             else:
