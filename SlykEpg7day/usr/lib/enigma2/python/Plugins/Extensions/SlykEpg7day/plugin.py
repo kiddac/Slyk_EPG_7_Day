@@ -166,11 +166,11 @@ class AutoStartTimer:
 
     def __init__(self, session):
         self.session = session
-        self.timer = eTimer()
+        self.epgtimer = eTimer()
         try:
-            self.timer_conn = self.timer.timeout.connect(self.onTimer)
+            self.epgtimer_conn = self.epgtimer.timeout.connect(self.onTimer)
         except:
-            self.timer.callback.append(self.onTimer)
+            self.epgtimer.callback.append(self.onTimer)
         self.update()
 
     def getWakeTime(self):
@@ -185,7 +185,7 @@ class AutoStartTimer:
 
     def update(self, atLeast=0):
         import time
-        self.timer.stop()
+        self.epgtimer.stop()
         wake = self.getWakeTime()
         nowtime = time.time()        
         if wake > 0:
@@ -197,14 +197,14 @@ class AutoStartTimer:
                 next = 3600
             if next <= 0:
                 next = 60
-            self.timer.startLongTimer(next)
+            self.epgtimer.startLongTimer(next)
         else:
             wake = -1
         return wake
 
     def onTimer(self):
         import time
-        self.timer.stop()
+        self.epgtimer.stop()
         now = int(time.time())
         wake = self.getWakeTime()
         atLeast = 0
