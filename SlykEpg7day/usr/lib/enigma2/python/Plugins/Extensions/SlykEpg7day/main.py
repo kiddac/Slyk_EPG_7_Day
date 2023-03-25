@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from . import _
+from . import _, isDreamOS
 from .plugin import cfg, screenwidth, regionbouquets, hasConcurrent, hasMultiprocessing, pythonFull, pythonVer, hdr
 from Components.ActionMap import ActionMap
 from Components.ConfigList import ConfigListScreen
@@ -67,53 +67,102 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         self.running = False
 
         if self.runtype == "manual":
+            if isDreamOS:
+                
+                if screenwidth.width() > 1280:
+                    skin = """
+                        <screen name="SlykEpgSetup" position="center,center" size="1200,762" title="Slyk EPG 7 Day Downloader" >
 
-            if screenwidth.width() > 1280:
-                skin = """
-                    <screen name="SlykEpgSetup" position="center,center" size="1200,762" title="Slyk EPG 7 Day Downloader" >
+                            <widget name="description" position="45,0" size="1110,120" font="Regular;30" valign="top" transparent="1" foregroundColor="#6dcff6" />
 
-                        <widget name="description" position="45,0" size="1110,120" font="Regular;30" valign="top" transparent="1" foregroundColor="#6dcff6" />
+                            <widget name="config" position="30,120" size="1140,504" font="Regular;30" secondfont="Regular;30"  itemHeight="72" enableWrapAround="1"  scrollbarMode="showOnDemand" transparent="1" />
 
-                        <widget name="config" textOffset="15,0" position="30,120" size="1140,504" font="Regular;30" secondfont="Regular;30"  itemHeight="72" enableWrapAround="1"  scrollbarMode="showOnDemand" transparent="1" />
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/key_red.png" position="30,712" size="9,42" zPosition="1" />
+                            <widget source="key_red" render="Label" position="48,712" size="225,42" font="Regular;30" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1" />
 
-                        <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/key_red.png" position="30,e-40" size="9,42" zPosition="1" />
-                        <widget source="key_red" render="Label" position="48,e-40" size="225,42" font="Regular;30" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1" />
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/key_green.png"  position="273,712" size="9,42" zPosition="1" />
+                            <widget source="key_green" render="Label" position="291,712" size="225,42" font="Regular;30" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1" />
 
-                        <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/key_green.png"  position="273,e-40" size="9,42" zPosition="1" />
-                        <widget source="key_green" render="Label" position="291,e-40" size="225,42" font="Regular;30" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1" />
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/key_yellow.png" position="516,712" size="9,42" zPosition="1" />
+                            <widget source="key_yellow" render="Label" position="534,712" size="225,42" font="Regular;30" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1"/>
 
-                        <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/key_yellow.png" position="516,e-40" size="9,42" zPosition="1" />
-                        <widget source="key_yellow" render="Label" position="534,e-40" size="225,42" font="Regular;30" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1"/>
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/key_blue.png" position="759,712" size="9,42" zPosition="1" />
+                            <widget source="key_blue" render="Label" position="777,712" size="225,42" font="Regular;30" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1"/>
 
-                        <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/key_blue.png" position="759,e-40" size="9,42" zPosition="1" />
-                        <widget source="key_blue" render="Label" position="777,e-40" size="225,42" font="Regular;30" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1"/>
+                            <widget name="status" position="45,632" size="1110,42" font="Regular;30" valign="center" transparent="1" foregroundColor="#6dcff6" />
+                        </screen>"""
 
-                        <widget name="status" position="45,e-120" size="1110,42" font="Regular;30" valign="center" transparent="1" foregroundColor="#6dcff6" />
-                    </screen>"""
+                else:
+                    skin = """
+                        <screen name="SlykEpgSetup" position="center,center" size="800,508" title="Slyk EPG 7 Day Downloader" >
 
+                            <widget name="description" position="40,0" size="760,80" font="Regular;20" valign="top" transparent="1" foregroundColor="#6dcff6" />
+
+                            <widget name="config" position="20,80" size="780,336" font="Regular;20" secondfont="Regular;20"  itemHeight="48" enableWrapAround="1"  scrollbarMode="showOnDemand" transparent="1" />
+
+
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/hd-key_red.png" position="20,476" size="6,28" zPosition="1" />
+                            <widget source="key_red" render="Label" position="32,476" size="150,28" font="Regular;20" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1" />
+
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/hd-key_green.png"  position="182,476" size="6,28" zPosition="1" />
+                            <widget source="key_green" render="Label" position="194,476" size="150,28" font="Regular;20" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1" />
+
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/hd-key_yellow.png" position="344,476" size="6,28" zPosition="1" />
+                            <widget source="key_yellow" render="Label" position="356,476" size="150,28" font="Regular;20" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1"/>
+
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/hd-key_blue.png" position="506,476" size="6,28" zPosition="1" />
+                            <widget source="key_blue" render="Label" position="518,476" size="150,28" font="Regular;20" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1"/>
+
+                            <widget name="status" position="40,422" size="760,28" font="Regular;30" valign="center" transparent="1" foregroundColor="#6dcff6" />
+                        </screen>"""
+                
             else:
-                skin = """
-                    <screen name="SlykEpgSetup" position="center,center" size="800,508" title="Slyk EPG 7 Day Downloader" >
+                if screenwidth.width() > 1280:
+                    skin = """
+                        <screen name="SlykEpgSetup" position="center,center" size="1200,762" title="Slyk EPG 7 Day Downloader" >
 
-                        <widget name="description" position="40,0" size="760,80" font="Regular;20" valign="top" transparent="1" foregroundColor="#6dcff6" />
+                            <widget name="description" position="45,0" size="1110,120" font="Regular;30" valign="top" transparent="1" foregroundColor="#6dcff6" />
 
-                        <widget name="config" textOffset="10,0" position="20,80" size="780,336" font="Regular;20" secondfont="Regular;20"  itemHeight="48" enableWrapAround="1"  scrollbarMode="showOnDemand" transparent="1" />
+                            <widget name="config" textOffset="15,0" position="30,120" size="1140,504" font="Regular;30" secondfont="Regular;30"  itemHeight="72" enableWrapAround="1"  scrollbarMode="showOnDemand" transparent="1" />
+
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/key_red.png" position="30,e-40" size="9,42" zPosition="1" />
+                            <widget source="key_red" render="Label" position="48,e-40" size="225,42" font="Regular;30" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1" />
+
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/key_green.png"  position="273,e-40" size="9,42" zPosition="1" />
+                            <widget source="key_green" render="Label" position="291,e-40" size="225,42" font="Regular;30" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1" />
+
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/key_yellow.png" position="516,e-40" size="9,42" zPosition="1" />
+                            <widget source="key_yellow" render="Label" position="534,e-40" size="225,42" font="Regular;30" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1"/>
+
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/key_blue.png" position="759,e-40" size="9,42" zPosition="1" />
+                            <widget source="key_blue" render="Label" position="777,e-40" size="225,42" font="Regular;30" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1"/>
+
+                            <widget name="status" position="45,e-120" size="1110,42" font="Regular;30" valign="center" transparent="1" foregroundColor="#6dcff6" />
+                        </screen>"""
+
+                else:
+                    skin = """
+                        <screen name="SlykEpgSetup" position="center,center" size="800,508" title="Slyk EPG 7 Day Downloader" >
+
+                            <widget name="description" position="40,0" size="760,80" font="Regular;20" valign="top" transparent="1" foregroundColor="#6dcff6" />
+
+                            <widget name="config" textOffset="10,0" position="20,80" size="780,336" font="Regular;20" secondfont="Regular;20"  itemHeight="48" enableWrapAround="1"  scrollbarMode="showOnDemand" transparent="1" />
 
 
-                        <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/hd-key_red.png" position="20,e-26" size="6,28" zPosition="1" />
-                        <widget source="key_red" render="Label" position="32,e-26" size="150,28" font="Regular;20" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1" />
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/hd-key_red.png" position="20,e-26" size="6,28" zPosition="1" />
+                            <widget source="key_red" render="Label" position="32,e-26" size="150,28" font="Regular;20" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1" />
 
-                        <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/hd-key_green.png"  position="182,e-26" size="6,28" zPosition="1" />
-                        <widget source="key_green" render="Label" position="194,e-26" size="150,28" font="Regular;20" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1" />
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/hd-key_green.png"  position="182,e-26" size="6,28" zPosition="1" />
+                            <widget source="key_green" render="Label" position="194,e-26" size="150,28" font="Regular;20" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1" />
 
-                        <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/hd-key_yellow.png" position="344,e-26" size="6,28" zPosition="1" />
-                        <widget source="key_yellow" render="Label" position="356,e-26" size="150,28" font="Regular;20" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1"/>
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/hd-key_yellow.png" position="344,e-26" size="6,28" zPosition="1" />
+                            <widget source="key_yellow" render="Label" position="356,e-26" size="150,28" font="Regular;20" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1"/>
 
-                        <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/hd-key_blue.png" position="506,e-26" size="6,28" zPosition="1" />
-                        <widget source="key_blue" render="Label" position="518,e-26" size="150,28" font="Regular;20" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1"/>
+                            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/images/hd-key_blue.png" position="506,e-26" size="6,28" zPosition="1" />
+                            <widget source="key_blue" render="Label" position="518,e-26" size="150,28" font="Regular;20" valign="center" transparent="1" noWrap="1" foregroundColor="#ffffff" halign="left" zPosition="1"/>
 
-                        <widget name="status" position="40,e-80" size="760,28" font="Regular;30" valign="center" transparent="1" foregroundColor="#6dcff6" />
-                    </screen>"""
+                            <widget name="status" position="40,e-80" size="760,28" font="Regular;30" valign="center" transparent="1" foregroundColor="#6dcff6" />
+                        </screen>"""
 
             self.skin = skin
 
