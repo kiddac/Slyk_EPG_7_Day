@@ -655,17 +655,17 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         regionb = regionbouquets.get(cfg.region.value)
 
         for channel in self.channels_all:
-            if channel['t'] == "ITV" and channel['b'] == str(regionb[0]) and channel['sb'] == str(regionb[1]):
+            if channel['t'] == "ITV1" and channel['b'] == str(regionb[0]) and channel['sb'] == str(regionb[1]):
                 channel['primary'] = True
                 channel['original'] = channel['t']
                 continue
 
-            if channel['t'] == "ITV+1" and channel['b'] == str(regionb[0]) and channel['sb'] == str(regionb[1]):
+            if channel['t'] == "ITV1+1" and channel['b'] == str(regionb[0]) and channel['sb'] == str(regionb[1]):
                 channel['primary'] = True
                 channel['original'] = channel['t']
                 continue
 
-            if channel['t'] == "ITV HD" and channel['b'] == str(regionb[0]) and channel['sb'] == str(regionb[1]):
+            if channel['t'] == "ITV1 HD" and channel['b'] == str(regionb[0]) and channel['sb'] == str(regionb[1]):
                 channel['primary'] = True
                 channel['original'] = channel['t']
                 continue
@@ -753,6 +753,46 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                 channel['t'] = "STV Scotland West"
             elif channel['sid'] == 4055:
                 channel['t'] = "STV Scotland West HD"
+                
+            # Channel 4 Regions
+            elif channel['sid'] == 1622:
+                channel['t'] = "Channel 4 South"
+            elif channel['sid'] == 1202:
+                channel['t'] = "Channel 4 HD South"
+            elif channel['sid'] == 1623:
+                channel['t'] = "Channel 4 Midlands"
+            elif channel['sid'] == 1213:
+                channel['t'] = "Channel 4 HD Midlands"
+            elif channel['sid'] == 1671:
+                channel['t'] = "Channel 4 +1 Midlands"
+            elif channel['sid'] == 1625:
+                channel['t'] = "Channel 4 NI"
+            elif channel['sid'] == 1246:
+                channel['t'] = "Channel 4 HD NI"          
+            elif channel['sid'] == 1626:
+                channel['t'] = "Channel 4 Scotland"
+            elif channel['sid'] == 1248:
+                channel['t'] = "Channel 4 HD Scotland"
+            elif channel['sid'] == 1675:
+                channel['t'] = "Channel 4 +1 Scotland"
+            elif channel['sid'] == 1624:
+                channel['t'] = "Channel 4 North"
+            elif channel['sid'] == 1249:
+                channel['t'] = "Channel 4 HD North"
+            elif channel['sid'] == 1673:
+                channel['t'] = "Channel 4 +1 North"
+            elif channel['sid'] == 1666:
+                channel['t'] = "Channel 4 Ireland"
+            elif channel['sid'] == 1250:
+                channel['t'] = "Channel 4 HD Ireland"
+            elif channel['sid'] == 1667:
+                channel['t'] = "Channel 4 +1 Ireland"                          
+            elif channel['sid'] == 1621:
+                channel['t'] = "Channel 4 London"
+            elif channel['sid'] == 4075:
+                channel['t'] = "Channel 4 HD London"
+            elif channel['sid'] == 1670:
+                channel['t'] = "Channel 4 +1 London"                 
 
             # self.epgid = channel['t'].encode('utf8')
 
