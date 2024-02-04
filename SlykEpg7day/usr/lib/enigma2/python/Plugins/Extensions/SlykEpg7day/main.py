@@ -24,6 +24,12 @@ import unicodedata
 import re
 # import sys
 import requests
+try:
+    from http.client import HTTPConnection
+    HTTPConnection.debuglevel = 0
+except:
+    from httplib import HTTPConnection
+    HTTPConnection.debuglevel = 0
 
 try:
     from cStringIO import StringIO
@@ -63,7 +69,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         self.list = []
         ConfigListScreen.__init__(self, self.list, session=self.session, on_change=self.changedEntry)
 
-        self.pause = 100
+        self.pause = 200
         self.running = False
 
         if self.runtype == "manual":
@@ -248,7 +254,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         except:
             self.timer.callback.append(self.loadLamedbFile)
 
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def auto(self):
         self.running = True
@@ -259,7 +265,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.loadLamedbFile)
         except:
             self.timer.callback.append(self.loadLamedbFile)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def loadLamedbFile(self):
         self.lamedb = []
@@ -388,12 +394,13 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.downloadRegions)
         except:
             self.timer.callback.append(self.downloadRegions)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def downloadRegions(self):
+
         r = ''
         # all current regions
-        regionsUrl = 'http://epgservices.sky.com/0.0.0/api/2.1/regions/json/'
+        regionsUrl = 'http://epgservices.sky.com/99.0.0/api/2.0/regions/json'
 
         adapter = HTTPAdapter(max_retries=0)
         http = requests.Session()
@@ -425,7 +432,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                     if region['t'] != 'SD':
                         downloadRegionList.append([bouquet, subbouquet])
 
-            self.urlList = ['http://epgservices.sky.com/5.1.1/api/2.1/region/json/%s/%s' % (region[0], region[1]) for region in downloadRegionList]
+        self.urlList = ['http://epgservices.sky.com/5.1.1/api/2.1/region/json/%s/%s' % (region[0], region[1]) for region in downloadRegionList]
 
         self.statusDescription = "Downloading basic channel data..."
         self.updateStatus()
@@ -434,7 +441,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.getJson)
         except:
             self.timer.callback.append(self.getJson)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def download_url(self, url):
         # index = url[1]
@@ -530,7 +537,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.combineJsonFiles)
         except:
             self.timer.callback.append(self.combineJsonFiles)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def combineJsonFiles(self):
         regionb = regionbouquets.get(cfg.region.value)
@@ -564,7 +571,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.removeUnusedFields1)
         except:
             self.timer.callback.append(self.removeUnusedFields1)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def removeUnusedFields1(self):
         # print ("****** removeUnusedFields ****")
@@ -600,23 +607,23 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.makeEpgID)
         except:
             self.timer.callback.append(self.makeEpgID)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def makeEpgID(self):
         regionb = regionbouquets.get(cfg.region.value)
 
         for channel in self.channels_all:
-            if channel['t'] == "ITV" and channel['b'] == str(regionb[0]) and channel['sb'] == str(regionb[1]):
+            if channel['t'] == "ITV1" and channel['b'] == str(regionb[0]) and channel['sb'] == str(regionb[1]):
                 channel['primary'] = True
                 channel['original'] = channel['t']
                 continue
 
-            if channel['t'] == "ITV+1" and channel['b'] == str(regionb[0]) and channel['sb'] == str(regionb[1]):
+            if channel['t'] == "ITV1+1" and channel['b'] == str(regionb[0]) and channel['sb'] == str(regionb[1]):
                 channel['primary'] = True
                 channel['original'] = channel['t']
                 continue
 
-            if channel['t'] == "ITV HD" and channel['b'] == str(regionb[0]) and channel['sb'] == str(regionb[1]):
+            if channel['t'] == "ITV1 HD" and channel['b'] == str(regionb[0]) and channel['sb'] == str(regionb[1]):
                 channel['primary'] = True
                 channel['original'] = channel['t']
                 continue
@@ -633,77 +640,63 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
         for channel in self.channels_all:
             if channel['sid'] == 1045:
-                channel['t'] = "ITV Anglia East HD"
+                channel['t'] = "ITV1 Anglia East HD"
             elif channel['sid'] == 1217:
-                channel['t'] = "ITV Anglia West HD"
+                channel['t'] = "ITV1 Anglia West HD"
             elif channel['sid'] == 1061:
-                channel['t'] = "ITV Border England HD"
-            elif channel['sid'] == 1020:
-                channel['t'] = "ITV Border Scotland"
+                channel['t'] = "ITV1 Border England HD"
+            elif channel['sid'] == 3063:
+                channel['t'] = "ITV1 Border Scotland HD"
             elif channel['sid'] == 1219:
-                channel['t'] = "ITV Central East HD"
+                channel['t'] = "ITV1 Central East HD"
             elif channel['sid'] == 6300:
-                channel['t'] = "ITV Central West"
+                channel['t'] = "ITV1 Central West"
             elif channel['sid'] == 6503:
-                channel['t'] = "ITV Central West HD"
-            elif channel['sid'] == 6145:
-                channel['t'] = "ITV +1 Central West"
-            elif channel['sid'] == 6200:
-                channel['t'] = "ITV Channel Isles"
+                channel['t'] = "ITV1 Central West HD"
             elif channel['sid'] == 6130:
-                channel['t'] = "ITV Granada"
+                channel['t'] = "ITV1 Granada"
             elif channel['sid'] == 6505:
-                channel['t'] = "ITV Granada HD"
-            elif channel['sid'] == 6355:
-                channel['t'] = "ITV +1 Granada"
+                channel['t'] = "ITV1 Granada HD"
             elif channel['sid'] == 6000:
-                channel['t'] = "ITV London"
+                channel['t'] = "ITV1 London"
             elif channel['sid'] == 6504:
-                channel['t'] = "ITV London HD"
-            elif channel['sid'] == 6155:
-                channel['t'] = "ITV +1 London"
+                channel['t'] = "ITV1 London HD"
             elif channel['sid'] == 6142:
-                channel['t'] = "ITV Meridian East"
-            elif channel['sid'] == 1209:
-                channel['t'] = "ITV Meridian South Coast HD"
-            elif channel['sid'] == 1208:
-                channel['t'] = "ITV Meridian Thames Valley HD"
+                channel['t'] = "ITV1 Meridian East"
             elif channel['sid'] == 6502:
-                channel['t'] = "ITV +1 Meridian East"
+                channel['t'] = "ITV1 Meridian East HD"
+            elif channel['sid'] == 1209:
+                channel['t'] = "ITV1 Meridian South Coast HD"
+            elif channel['sid'] == 1208:
+                channel['t'] = "ITV1 Meridian Thames Valley HD"
             elif channel['sid'] == 1043:
-                channel['t'] = "ITV Tyne Tees HD"
-            elif channel['sid'] == 1062:
-                channel['t'] = "ITV Westcountry SW HD"
-            elif channel['sid'] == 1063:
-                channel['t'] = "ITV Westcountry West HD"
-            elif channel['sid'] == 1214:
-                channel['t'] = "ITV Yorkshire East HD"
-            elif channel['sid'] == 1044:
-                channel['t'] = "ITV Yorkshire West HD"
-            elif channel['sid'] == 6020:
-                channel['t'] = "ITV Wales"
+                channel['t'] = "ITV1 Tyne Tees HD"
             elif channel['sid'] == 6501:
-                channel['t'] = "ITV Wales HD"
+                channel['t'] = "ITV1 Wales HD"
+            elif channel['sid'] == 1062:
+                channel['t'] = "ITV1 West Country SW HD"
+            elif channel['sid'] == 1217:
+                channel['t'] = "ITV1 West Country West HD"
+            elif channel['sid'] == 1214:
+                channel['t'] = "ITV1 Yorkshire East HD"
+            elif channel['sid'] == 1044:
+                channel['t'] = "ITV1 Yorkshire West HD"
+            elif channel['sid'] == 6145:
+                channel['t'] = "ITV1+1 Central West"
+            elif channel['sid'] == 6355:
+                channel['t'] = "ITV1+1 Granada"
             elif channel['sid'] == 6155:
-                channel['t'] = "ITV +1 Wales"
+                channel['t'] = "ITV1+1 London"
+            elif channel['sid'] == 6365:
+                channel['t'] = "ITV1+1 Meridian East"
 
             # STV Regions
-            elif channel['sid'] == 6325:
-                channel['t'] = "STV Dundee"
-            elif channel['sid'] == 1167:
-                channel['t'] = "STV Dundee HD"
-            elif channel['sid'] == 6210:
-                channel['t'] = "STV Grampian"
-            elif channel['sid'] == 1168:
-                channel['t'] = "STV Grampian HD"
-            elif channel['sid'] == 6371:
-                channel['t'] = "STV Scotland East"
-            elif channel['sid'] == 1170:
-                channel['t'] = "STV Scotland East HD"
-            elif channel['sid'] == 6220:
-                channel['t'] = "STV Scotland West"
             elif channel['sid'] == 4055:
-                channel['t'] = "STV Scotland West HD"
+                channel['t'] = "STV East"  # scottisheast
+            elif channel['sid'] == 1170:
+                channel['t'] = "STV HD"
+            elif channel['sid'] == 1168:
+                channel['t'] = "STV North"  # grampian
 
             # self.epgid = channel['t'].encode('utf8')
 
@@ -764,7 +757,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.addLamedbRefToChannelsJson)
         except:
             self.timer.callback.append(self.addLamedbRefToChannelsJson)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def addLamedbRefToChannelsJson(self):
         # print("***** addLamedbRefToChannelsJson *****")
@@ -801,6 +794,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                     piconname = re.sub('[^a-z0-9]', '', piconname.replace('&', 'and').replace('+', 'plus').replace('*', 'star').lower())
 
                     for line in self.lamedb:
+                        """
                         if line[2] == "itv" and "ffff0000" in str(line[0]) and "primary" in channel:
                             if channel['original'] == "ITV":
                                 if line[0] not in channel['refs']:
@@ -825,6 +819,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                             if channel['original'] == "STV HD":
                                 if line[0] not in channel['refs']:
                                     channel['refs'].append(line[0])
+                                    """
 
                         if piconname == line[2]:
                             if line[0] not in channel['refs']:
@@ -848,7 +843,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.getChannelRefList)
         except:
             self.timer.callback.append(self.getChannelRefList)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def getChannelRefList(self):
         # print("**** getChannelRefList ****")
@@ -867,7 +862,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.createEPGDataChunks)
         except:
             self.timer.callback.append(self.createEPGDataChunks)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def create_chunks(self, list_name, n):
         # print("***** create_chunks ****")
@@ -913,7 +908,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.downloadEPGdata)
         except:
             self.timer.callback.append(self.downloadEPGdata)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def downloadEPGdata(self):
         # print("*** downloadepgdata ***")
@@ -1029,7 +1024,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.buildXMLTVChannelFile)
         except:
             self.timer.callback.append(self.buildXMLTVChannelFile)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def purge(self, dir, pattern):
         for f in os.listdir(dir):
@@ -1089,7 +1084,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.buildXMLTVSourceFile)
         except:
             self.timer.callback.append(self.buildXMLTVSourceFile)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def buildXMLTVSourceFile(self):
         # print("*** buildxmltvsourcefile ***")
@@ -1125,7 +1120,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.timer_conn = self.timer.timeout.connect(self.buildXMLTVProgramsFile)
         except:
             self.timer.callback.append(self.buildXMLTVProgramsFile)
-        self.timer.start(self.pause, 1)
+        self.timer.start(self.pause, True)
 
     def buildXMLTVProgramsFile(self):
         # print("*** build xmltvprogramsfile ***")
@@ -1218,7 +1213,10 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         text = "Status: ---"
         if self.running:
             text = "Status: %s" % (self.statusDescription)
-        self["status"].setText(text)
+        try:
+            self["status"].setText(text)
+        except Exception as e:
+            print(e)
 
     def finished(self):
         del self.channels_all

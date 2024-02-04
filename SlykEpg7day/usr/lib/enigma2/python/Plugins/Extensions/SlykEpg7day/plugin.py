@@ -31,12 +31,16 @@ screenwidth = getDesktop(0).size()
 
 autoStartTimer = None
 
+"""
 hdr = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "Accept-Language": "en-GB,en;q=0.5",
     "Accept-Encoding": "gzip, deflate",
 }
+"""
+
+hdr = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'}
 
 regionlist = [
     ("Atherstone", _("Atherstone")),
@@ -102,7 +106,6 @@ regionbouquets = {
     "Gloucester": [4101, 24],
     "Grampian": [4102, 35],
     "Granada": [4101, 7],
-    "HTVWales": [4103, 43],
     "HTVWest": [4101, 4],
     "HTVWestThamesValley": [4103, 63],
     "HenleyOnThames": [4103, 70],
