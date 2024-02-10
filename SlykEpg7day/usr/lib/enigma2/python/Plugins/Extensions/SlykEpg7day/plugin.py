@@ -5,7 +5,6 @@ from . import _
 from Components.config import config, ConfigSubsection, ConfigYesNo, ConfigEnableDisable, ConfigClock, ConfigSelection, ConfigText, ConfigSelectionNumber
 from enigma import getDesktop, eTimer
 from Plugins.Plugin import PluginDescriptor
-import time
 import sys
 import twisted.python.runtime
 
@@ -171,10 +170,14 @@ class AutoStartTimer:
     def __init__(self, session):
         self.session = session
         self.epgtimer = eTimer()
-        self.epgtimer.callback.append(self.onTimer)
+        try:
+            self.epgtimer_conn = self.epgtimer.timeout.connect(self.onTimer)
+        except:
+            self.epgtimer.callback.append(self.onTimer)
         self.update()
 
     def getWakeTime(self):
+        import time        
         if cfg.enabled.value:
             clock = cfg.wakeup.value
             nowt = time.time()
@@ -184,14 +187,15 @@ class AutoStartTimer:
             return -1
 
     def update(self, atLeast=0):
+        import time
         self.epgtimer.stop()
         wake = self.getWakeTime()
-        now = int(time.time())
+        nowtime = time.time()        
         if wake > 0:
-            if wake < now + atLeast:
+            if wake < nowtime + atLeast:
                 # Tomorrow.
                 wake += 24 * 3600
-            next = wake - now
+            next = wake - int(nowtime)
             if next > 3600:
                 next = 3600
             if next <= 0:
@@ -202,6 +206,7 @@ class AutoStartTimer:
         return wake
 
     def onTimer(self):
+        import time
         self.epgtimer.stop()
         now = int(time.time())
         wake = self.getWakeTime()
