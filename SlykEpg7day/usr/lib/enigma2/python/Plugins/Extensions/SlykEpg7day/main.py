@@ -14,16 +14,20 @@ from Screens.Console import Console
 from Screens.MessageBox import MessageBox
 from Screens.Screen import Screen
 from requests.adapters import HTTPAdapter
+from unicodedata import normalize
 
 import datetime
 import json
 import os
 # import enigma
 import csv
-import unicodedata
 import re
 # import sys
 import requests
+
+if pythonVer == 3:
+    unicode = str
+
 try:
     from http.client import HTTPConnection
     HTTPConnection.debuglevel = 0
@@ -342,9 +346,9 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                             piconChannelName = ChannelName
 
                             if pythonVer == 2:
-                                piconChannelName = unicodedata.normalize('NFKD', unicode(piconChannelName, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
+                                piconChannelName = normalize('NFKD', unicode(piconChannelName, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
                             elif pythonVer == 3:
-                                piconChannelName = unicodedata.normalize('NFKD', piconChannelName).encode('ASCII', 'ignore').decode('ascii')
+                                piconChannelName = normalize('NFKD', piconChannelName).encode('ASCII', 'ignore').decode('ascii')
 
                             piconChannelName = re.sub('[^a-z0-9]', '', piconChannelName.replace('&', 'and').replace('+', 'plus').replace('*', 'star').lower())
 
@@ -705,9 +709,9 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
             self.epgid = str(channel['t'])
 
             if pythonVer == 2:
-                self.epgid = unicodedata.normalize('NFKD', unicode(self.epgid, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
+                self.epgid = normalize('NFKD', unicode(self.epgid, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
             elif pythonVer == 3:
-                self.epgid = unicodedata.normalize('NFKD', self.epgid).encode('ASCII', 'ignore').decode('ascii')
+                self.epgid = normalize('NFKD', self.epgid).encode('ASCII', 'ignore').decode('ascii')
 
             self.epgid = re.sub('[^a-z0-9]', '', self.epgid.replace('&', 'and').replace('+', 'plus').replace('*', 'star').lower())
 
@@ -787,9 +791,9 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                     piconname = str(channel['t'])
 
                     if pythonVer == 2:
-                        piconname = unicodedata.normalize('NFKD', unicode(piconname, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
+                        piconname = normalize('NFKD', unicode(piconname, 'utf_8', errors='ignore')).encode('ASCII', 'ignore')
                     elif pythonVer == 3:
-                        piconname = unicodedata.normalize('NFKD', piconname).encode('ASCII', 'ignore').decode('ascii')
+                        piconname = normalize('NFKD', piconname).encode('ASCII', 'ignore').decode('ascii')
 
                     piconname = re.sub('[^a-z0-9]', '', piconname.replace('&', 'and').replace('+', 'plus').replace('*', 'star').lower())
 
