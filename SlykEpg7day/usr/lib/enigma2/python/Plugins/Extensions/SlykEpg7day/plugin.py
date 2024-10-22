@@ -219,12 +219,8 @@ class AutoStartTimer:
 
 def autostart(reason, session=None, **kwargs):
     global autoStartTimer
-    if reason == 0:
-        if session is not None:
-            if autoStartTimer is None:
-                autoStartTimer = AutoStartTimer(session)
-    return
-
+    if reason == 0 and session is not None and autoStartTimer is None:
+        autoStartTimer = AutoStartTimer(session)
 
 def main(session, **kwargs):
     from . import main
@@ -238,9 +234,7 @@ def Plugins(**kwargs):
         iconFile = 'icons/slykepg7dayFHD.png'
 
     description = _('Download Real Sky UK 7 Day EPG - By KiddaC')
-    name = _('Slyk EPG 7 Day')
+    pluginname = _('Slyk EPG 7 Day')
 
-    result = [PluginDescriptor(name=name, description=description, where=[PluginDescriptor.WHERE_AUTOSTART, PluginDescriptor.WHERE_SESSIONSTART], fnc=autostart),
-              PluginDescriptor(name=name, description=description, where=PluginDescriptor.WHERE_PLUGINMENU, icon=iconFile, fnc=main)]
-
-    return result
+    return [PluginDescriptor(name=pluginname, description=description, where=[PluginDescriptor.WHERE_AUTOSTART, PluginDescriptor.WHERE_SESSIONSTART], fnc=autostart),
+            PluginDescriptor(name=pluginname, description=description, where=PluginDescriptor.WHERE_PLUGINMENU, icon=iconFile, fnc=main)]

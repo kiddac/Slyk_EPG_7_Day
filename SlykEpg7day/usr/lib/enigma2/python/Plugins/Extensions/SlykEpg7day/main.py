@@ -162,7 +162,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         if dependencies is False:
             os.chmod("/usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/dependencies.sh", 0o0755)
             cmd1 = ". /usr/lib/enigma2/python/Plugins/Extensions/SlykEpg7day/dependencies.sh"
-            self.session.openWithCallback(self.initConfig, Console, title="Checking Python Dependencies", cmdlist=[cmd1], closeOnSuccess=False)
+            self.session.openWithCallback(self.initConfig, Console, title="Checking Python Dependencies", cmdlist=[cmd1], closeOnSuccess=True)
         else:
             self.initConfig()
 
