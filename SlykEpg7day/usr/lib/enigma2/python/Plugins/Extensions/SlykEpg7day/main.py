@@ -407,21 +407,23 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         regionsUrl = 'http://epgservices.sky.com/99.0.0/api/2.0/regions/json'
 
         adapter = HTTPAdapter(max_retries=0)
-        http = requests.Session()
-        http.mount("http://", adapter)
-        http.mount("https://", adapter)
 
-        try:
-            r = http.get(regionsUrl, headers=hdr, stream=True, timeout=(10), verify=False)
-            r.raise_for_status()
-            if r.status_code == requests.codes.ok:
-                try:
-                    content = r.json()
-                except Exception as e:
-                    print(e)
-        except Exception as e:
-            print(e)
-            self.urlList = []
+        with requests.Session() as http:
+            http.mount("http://", adapter)
+            http.mount("https://", adapter)
+
+            try:
+                r = http.get(regionsUrl, headers=hdr, stream=True, timeout=(10), verify=False)
+                r.raise_for_status()
+
+                if r.status_code == requests.codes.ok:
+                    try:
+                        content = r.json()
+                    except Exception as e:
+                        print(e)
+            except Exception as e:
+                print(e)
+                self.urlList = []
 
         downloadRegionList = []
 
@@ -448,24 +450,25 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         self.timer.start(self.pause, True)
 
     def download_url(self, url):
-        # index = url[1]
         r = ""
         adapter = HTTPAdapter()
-        http = requests.Session()
-        http.mount("http://", adapter)
-        http.mount("https://", adapter)
-        try:
-            r = http.get(url, headers=hdr, timeout=10, verify=False, stream=True)
-            r.raise_for_status()
-            if r.status_code == requests.codes.ok:
-                try:
-                    response = r.json()
-                    return response, url
-                except:
-                    return "", url
 
-        except Exception as e:
-            print(e)
+        with requests.Session() as http:
+            http.mount("http://", adapter)
+            http.mount("https://", adapter)
+
+            try:
+                r = http.get(url, headers=hdr, timeout=10, verify=False, stream=True)
+                r.raise_for_status()
+                if r.status_code == requests.codes.ok:
+                    try:
+                        response = r.json()
+                        return response, url
+                    except:
+                        return "", url
+
+            except Exception as e:
+                print(e)
 
         return "", url
 

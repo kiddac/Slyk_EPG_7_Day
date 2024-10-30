@@ -31,16 +31,12 @@ screenwidth = getDesktop(0).size()
 
 autoStartTimer = None
 
-"""
-hdr = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-GB,en;q=0.5",
-    "Accept-Encoding": "gzip, deflate",
-}
-"""
 
-hdr = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'}
+hdr = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+    'Connection': 'keep-alive',
+    'Accept-Encoding': 'gzip, deflate'
+}
 
 regionlist = [
     ("Atherstone", _("Atherstone")),
@@ -221,6 +217,7 @@ def autostart(reason, session=None, **kwargs):
     global autoStartTimer
     if reason == 0 and session is not None and autoStartTimer is None:
         autoStartTimer = AutoStartTimer(session)
+
 
 def main(session, **kwargs):
     from . import main
