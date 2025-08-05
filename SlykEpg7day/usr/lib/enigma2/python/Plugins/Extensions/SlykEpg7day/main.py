@@ -902,7 +902,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
                 self.EPGUrlDownloadList.append(url)
 
         with open('/etc/enigma2/SlykEpg7day/epgurllist.json', 'w') as f:
-            json.dump(self.EPGUrlDownloadList, f)
+            json.dump(self.EPGUrlDownloadList, f, indent=4)
 
         # cleanup
         del self.channelRefs
@@ -1045,7 +1045,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
 
         with open('/etc/enigma2/SlykEpg7day/combinedepgdata.json', 'w') as f:
             # print(self.channels_all)
-            json.dump(self.channels_all, f)
+            json.dump(self.channels_all, f, indent=4)
 
         # remove old files
         self.purge('/etc/epgimport', 'slykepg7day.xml')
@@ -1133,7 +1133,7 @@ class SlykEpg7Day_Main(ConfigListScreen, Screen):
         # print("*** build xmltvprogramsfile ***")
 
         with open('/etc/enigma2/SlykEpg7day/combinedepgdata.json', 'w') as f:
-            json.dump(self.channels_all, f)
+            json.dump(self.channels_all, f, indent=4)
 
         filepath = '/etc/epgimport/'
         epgfilename = 'slykepg7day.xml'

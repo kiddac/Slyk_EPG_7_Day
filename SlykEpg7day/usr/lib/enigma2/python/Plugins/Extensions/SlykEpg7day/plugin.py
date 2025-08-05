@@ -29,12 +29,11 @@ pythonVer = sys.version_info.major
 
 screenwidth = getDesktop(0).size()
 
-autoStartTimer = None
+sEautoStartTimer = None
 
 
 hdr = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
-    'Connection': 'keep-alive',
     'Accept-Encoding': 'gzip, deflate'
 }
 
@@ -162,7 +161,7 @@ config.plugins.extra_slykepg7day.last_import = ConfigText(default="none")
 CONFIG_PATH = '/etc/SlykEpg7day'
 
 
-class AutoStartTimer:
+class SEAutoStartTimer:
 
     def __init__(self, session):
         self.session = session
@@ -214,9 +213,9 @@ class AutoStartTimer:
 
 
 def autostart(reason, session=None, **kwargs):
-    global autoStartTimer
-    if reason == 0 and session is not None and autoStartTimer is None:
-        autoStartTimer = AutoStartTimer(session)
+    global sEautoStartTimer
+    if reason == 0 and session is not None and sEautoStartTimer is None:
+        sEautoStartTimer = SEAutoStartTimer(session)
 
 
 def main(session, **kwargs):
